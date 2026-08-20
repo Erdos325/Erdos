@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мировые часы — столицы в реальном времени</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#05070c;
+    --panel:#0d121c;
+    --line:rgba(255,255,255,0.08);
+    --text:#e9edf5;
+    --dim:#8890a4;
+    --accent:#5ec8ff;
+    --accent2:#ffb15e;
+    --night:#0a0d16;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  .wrap{max-width:1180px; margin:0 auto; padding:36px 28px 60px;}
+
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    margin-bottom:44px;
+    flex-wrap:wrap;
+    gap:20px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px;
+  }
+
+  .title-block .eyebrow{
+    font-size:0.75rem;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--accent);
+    display:block;
+    margin-bottom:10px;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(1.9rem, 3.4vw, 2.7rem);
+    letter-spacing:-0.01em;
+  }
+
+  h1 em{color:var(--accent2); font-style:italic; font-weight:300;}
+
+  .local-now{
+    text-align:right;
+  }
+
+  .local-now .label{
+    font-size:0.75rem;
+    color:var(--dim);
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    margin-bottom:6px;
+  }
+
+  .local-now .time{
+    font-family:'Fraunces', serif;
+    font-size:1.8rem;
+    color:var(--text);
+    font-variant-numeric:tabular-nums;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:400px 1fr;
+    gap:40px;
+    align-items:start;
+  }
+
+  /* --- GLOBE --- */
+  .globe-stage{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:30px 0;
+  }
+
+  .globe{
+    position:relative;
+    width:320px;
+    height:320px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(94,200,255,0.35), transparent 55%),
+      radial-gradient(circle at 68% 72%, rgba(255,177,94,0.18), transparent 50%),
+      linear-gradient(160deg, #12213a 0%, #0a1220 60%, #060a12 100%);
+    box-shadow:
+      inset -30px -30px 60px rgba(0,0,0,0.65),
+      inset 12px 12px 40px rgba(94,200,255,0.08),
+      0 0 70px rgba(94,200,255,0.08);
+    animation: spin 40s linear infinite;
+    overflow:hidden;
+  }
+
+  .globe::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, transparent 1px 40px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, transparent 1px 40px);
+    border-radius:50%;
+    mix-blend-mode:overlay;
+  }
+
+  .globe .land{
+    position:absolute;
+    background:rgba(126,214,150,0.28);
+    filter:blur(0.5px);
+  }
+  .land1{width:70px; height:40px; top:60px; left:50px; border-radius:40% 60% 55% 45%;}
+  .land2{width:50px; height:70px; top:110px; left:170px; border-radius:50% 40% 60% 50%;}
+  .land3{width:90px; height:35px; top:190px; left:70px; border-radius:60% 40% 50% 50%;}
+  .land4{width:40px; height:50px; top:40px; left:210px; border-radius:50%;}
+  .land5{width:60px; height:30px; top:230px; left:180px; border-radius:50% 60% 40% 50%;}
+
+  @keyframes spin{
+    from{background-position:0 0;}
+    to{background-position:-320px 0;}
+  }
+
+  .globe-orbit-ring{
+    position:absolute;
+    width:360px; height:360px;
+    border:1px solid rgba(94,200,255,0.15);
+    border-radius:50%;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+  }
+
+  .globe-caption{
+    text-align:center;
+    margin-top:22px;
+    font-size:0.85rem;
+    color:var(--dim);
+    max-width:280px;
+  }
+
+  .globe-caption strong{color:var(--accent);}
+
+  /* --- CLOCK GRID --- */
+  .filter-row{
+    display:flex; gap:10px; margin-bottom:22px; flex-wrap:wrap;
+  }
+
+  .chip{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--dim);
+    padding:8px 16px;
+    border-radius:20px;
+    font-size:0.82rem;
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .chip:hover{color:var(--text); border-color:rgba(255,255,255,0.2);}
+  .chip.active{background:var(--accent); color:#05070c; border-color:var(--accent); font-weight:600;}
+
+  .clock-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:14px;
+  }
+
+  .clock-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 22px;
+    position:relative;
+    overflow:hidden;
+    transition:border-color 0.2s, transform 0.15s;
+  }
+  .clock-card:hover{border-color:rgba(94,200,255,0.35); transform:translateY(-2px);}
+
+  .clock-card.is-day::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--accent2), transparent);
+  }
+  .clock-card.is-night::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, #3a4a70, transparent);
+  }
+
+  .cc-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:14px;
+  }
+
+  .cc-city{
+    font-family:'Fraunces', serif;
+    font-size:1.05rem;
+  }
+
+  .cc-country{
+    font-size:0.75rem;
+    color:var(--dim);
+    margin-top:2px;
+  }
+
+  .cc-badge{
+    font-size:0.68rem;
+    padding:3px 8px;
+    border-radius:10px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    white-space:nowrap;
+  }
+  .is-day .cc-badge{background:rgba(255,177,94,0.15); color:var(--accent2);}
+  .is-night .cc-badge{background:rgba(94,140,255,0.15); color:#8fa8ff;}
+
+  .cc-time{
+    font-family:'Fraunces', serif;
+    font-size:2.1rem;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.01em;
+  }
+
+  .cc-date{
+    font-size:0.78rem;
+    color:var(--dim);
+    margin-top:6px;
+  }
+
+  .cc-offset{
+    font-size:0.72rem;
+    color:var(--dim);
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+  }
+
+  footer{
+    margin-top:50px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:0.8rem;
+    color:var(--dim);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .globe-stage{padding:10px 0 20px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .globe{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <span class="eyebrow">Живое время · 25 столиц</span>
+      <h1>Мир не <em>спит</em> одновременно</h1>
+    </div>
+    <div class="local-now">
+      <div class="label">У вас сейчас</div>
+      <div class="time" id="localTime">--:--:--</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="globe-stage">
+        <div class="globe-orbit-ring"></div>
+        <div class="globe">
+          <div class="land land1"></div>
+          <div class="land land2"></div>
+          <div class="land land3"></div>
+          <div class="land land4"></div>
+          <div class="land land5"></div>
+        </div>
+      </div>
+      <p class="globe-caption">Пока вы читаете это, где-то <strong>восходит солнце</strong>, а где-то уже <strong>гаснут окна</strong>.</p>
+    </div>
+
+    <div>
+      <div class="filter-row">
+        <button class="chip active" data-filter="all">Все</button>
+        <button class="chip" data-filter="day">Сейчас день</button>
+        <button class="chip" data-filter="night">Сейчас ночь</button>
+      </div>
+      <div class="clock-grid" id="clockGrid"></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© Мировые часы — демо-сайт</span>
+    <span>Создано в чате с Claude</span>
+  </footer>
+</div>
+
+<script>
+  const capitals = [
+    { city: "Москва", country: "Россия", tz: "Europe/Moscow" },
+    { city: "Астана", country: "Казахстан", tz: "Asia/Almaty" },
+    { city: "Лондон", country: "Великобритания", tz: "Europe/London" },
+    { city: "Париж", country: "Франция", tz: "Europe/Paris" },
+    { city: "Берлин", country: "Германия", tz: "Europe/Berlin" },
+    { city: "Мадрид", country: "Испания", tz: "Europe/Madrid" },
+    { city: "Рим", country: "Италия", tz: "Europe/Rome" },
+    { city: "Вашингтон", country: "США", tz: "America/New_York" },
+    { city: "Лос-Анджелес", country: "США", tz: "America/Los_Angeles" },
+    { city: "Мехико", country: "Мексика", tz: "America/Mexico_City" },
+    { city: "Буэнос-Айрес", country: "Аргентина", tz: "America/Argentina/Buenos_Aires" },
+    { city: "Бразилиа", country: "Бразилия", tz: "America/Sao_Paulo" },
+    { city: "Каир", country: "Египет", tz: "Africa/Cairo" },
+    { city: "Претория", country: "ЮАР", tz: "Africa/Johannesburg" },
+    { city: "Найроби", country: "Кения", tz: "Africa/Nairobi" },
+    { city: "Москва", country: "Турция", tz: "Europe/Istanbul" },
+    { city: "Дубай", country: "ОАЭ", tz: "Asia/Dubai" },
+    { city: "Дели", country: "Индия", tz: "Asia/Kolkata" },
+    { city: "Пекин", country: "Китай", tz: "Asia/Shanghai" },
+    { city: "Токио", country: "Япония", tz: "Asia/Tokyo" },
+    { city: "Сеул", country: "Южная Корея", tz: "Asia/Seoul" },
+    { city: "Бангкок", country: "Таиланд", tz: "Asia/Bangkok" },
+    { city: "Джакарта", country: "Индонезия", tz: "Asia/Jakarta" },
+    { city: "Канберра", country: "Австралия", tz: "Australia/Sydney" },
+    { city: "Веллингтон", country: "Новая Зеландия", tz: "Pacific/Auckland" }
+  ];
+
+  const grid = document.getElementById('clockGrid');
+  const cards = [];
+
+  capitals.forEach((cap, i) => {
+    const el = document.createElement('div');
+    el.className = 'clock-card';
+    el.innerHTML = `
+      <div class="cc-top">
+        <div>
+          <div class="cc-city">${cap.city}</div>
+          <div class="cc-country">${cap.country}</div>
+        </div>
+        <div class="cc-badge" data-badge></div>
+      </div>
+      <div class="cc-time" data-time>--:--:--</div>
+      <div class="cc-date" data-date></div>
+      <div class="cc-offset" data-offset></div>
+    `;
+    grid.appendChild(el);
+    cards.push({ ...cap, el });
+  });
+
+  function updateClocks(){
+    const now = new Date();
+    document.getElementById('localTime').textContent =
+      now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+    cards.forEach(c => {
+      let parts;
+      try {
+        parts = new Intl.DateTimeFormat('ru-RU', {
+          timeZone: c.tz,
+          hour:'2-digit', minute:'2-digit', second:'2-digit',
+          hour12:false
+        }).formatToParts(now);
+      } catch(e){ return; }
+
+      const h = parts.find(p=>p.type==='hour').value;
+      const m = parts.find(p=>p.type==='minute').value;
+      const s = parts.find(p=>p.type==='second').value;
+      const timeStr = `${h}:${m}:${s}`;
+
+      const dateStr = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: c.tz, weekday:'short', day:'numeric', month:'short'
+      }).format(now);
+
+      const offsetFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: c.tz, timeZoneName:'shortOffset'
+      });
+      const offsetParts = offsetFormatter.formatToParts(now);
+      const offset = offsetParts.find(p=>p.type==='timeZoneName')?.value || '';
+
+      const hourNum = parseInt(h, 10);
+      const isDay = hourNum >= 6 && hourNum < 19;
+
+      c.el.querySelector('[data-time]').textContent = timeStr;
+      c.el.querySelector('[data-date]').textContent = dateStr;
+      c.el.querySelector('[data-offset]').textContent = `UTC ${offset.replace('GMT','')}`;
+      c.el.querySelector('[data-badge]').textContent = isDay ? 'День' : 'Ночь';
+      c.el.classList.toggle('is-day', isDay);
+      c.el.classList.toggle('is-night', !isDay);
+      c.isDay = isDay;
+    });
+  }
+
+  updateClocks();
+  setInterval(updateClocks, 1000);
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const filter = chip.dataset.filter;
+      cards.forEach(c => {
+        const show = filter === 'all' || (filter === 'day' && c.isDay) || (filter === 'night' && !c.isDay);
+        c.el.style.display = show ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
